@@ -24,7 +24,14 @@
 ```bash
 yarn install
 ```
-3. Run database
+3. Create .env file with database environment variables.
+```javascript
+MONGO_USER=
+MONGO_PASSWORD=
+MONGO_PORT=
+MONGO_DATABASE=
+```
+4. Run database
 ```bash
 # In a terminal on root file project
 docker compose up -d
