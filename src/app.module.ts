@@ -5,6 +5,7 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { ServeStaticModule } from '@nestjs/serve-static';
 
 import { PokemonModule } from './pokemon/pokemon.module';
+import { CommonModule } from './common/common.module';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { PokemonModule } from './pokemon/pokemon.module';
       }),
     }),
     PokemonModule,
+    CommonModule,
   ],
   controllers: [],
   providers: []
