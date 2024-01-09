@@ -16,7 +16,7 @@ import { HttpModule } from './libs/http/http.module';
     }),
     MongooseModule.forRootAsync({
       useFactory: () => ({
-        uri: 'mongodb://ericrodriguez:topito2009@localhost:8081',
+        uri: 'mongodb://username:pass@localhost:8081',
         dbName: 'pokedb',
       }),
     }),
