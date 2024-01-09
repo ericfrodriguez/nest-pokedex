@@ -3,22 +3,27 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model, isValidObjectId } from 'mongoose';
 
 import { Pokemon, PokemonDocument } from './entities/pokemon.entity';
-import { CreatePokemonDto } from './dto/create-pokemon.dto';
+import { CreatePokemonDTO } from './dto/create-pokemon.dto';
 import { UpdatePokemonDto } from './dto/update-pokemon.dto';
+import { PokeResponse, SimplePokemon } from './interfaces/pokemon-response.interfaces';
+import { HttpAdapter } from 'src/libs/http/http.adapter';
+import { PaginationDTO } from '../common/dto/pagination.dto';
 
 @Injectable()
 export class PokemonService {
 
+
   constructor(
     @InjectModel(Pokemon.name) private readonly pokemonModel: Model<PokemonDocument>,
+    private readonly http: HttpAdapter,
   ) { }
 
-  async create(createPokemonDto: CreatePokemonDto) {
+  async create(createPokemonDTO: CreatePokemonDTO) {
 
-    createPokemonDto.name = createPokemonDto.name.toLowerCase();
+    createPokemonDTO.name = createPokemonDTO.name.toLowerCase();
 
     try {
-      const newPokemon: Pokemon = await this.pokemonModel.create(createPokemonDto);
+      const newPokemon: Pokemon = await this.pokemonModel.create(createPokemonDTO);
 
       return newPokemon;
     } catch (error) {
@@ -28,8 +33,19 @@ export class PokemonService {
     }
   }
 
-  findAll() {
-    return `This action returns all pokemon`;
+  findAll(paginationDTO: PaginationDTO) {
+
+    const { limit = 10, offset = 0 } = paginationDTO;
+
+    const pokemons = this.pokemonModel.find()
+    .skip(offset)
+    .limit(limit)
+    .sort({
+      no: 1
+    })
+    .select('-__v')
+
+    return pokemons;
   }
 
   async findOne(term: string) {
@@ -88,6 +104,43 @@ export class PokemonService {
     }
 
     return 'Pokemon deleted'
+  }
+
+  async getPokemons() {
+    const data = await this.http.get<PokeResponse>('https://pokeapi.co/api/v2/pokemon?limit=650');
+
+    const pokemons = data.results.map(({ name, url }: SimplePokemon) => {
+
+      const segments: string[] = url.split('/');
+      const no: string = segments.at(-2);
+
+      return {
+        name,
+        no
+      }
+    });
+
+    return pokemons;
+  }
+
+  async createMany(pokemons: CreatePokemonDTO[]) {
+    try {
+      await this.pokemonModel.insertMany(pokemons);
+    } catch (error) {
+      if (error.code === 11000) {
+        throw new BadRequestException(`Some pokemons already exists in DB`);
+      }
+
+      throw new InternalServerErrorException(`Something wents wrong trying bulk insert Pokemons - Check server logs`);
+    }
+  }
+
+  async removeAll() {
+    const { deletedCount } = await this.pokemonModel.deleteMany();
+
+    if (deletedCount === 0) {
+      throw new BadRequestException(`No pokemons were deleted`);
+    }
   }
 
   private HandleExceptions(error: any, { methodName }: { methodName: string }) {
